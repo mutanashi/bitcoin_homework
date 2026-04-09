@@ -3,781 +3,379 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>BTC Market Compass</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
+<title>Mining → AI: mNAV Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-  :root {
-    --bg: #080c10;
-    --panel: #0e1318;
-    --border: #1e2a34;
-    --accent: #00ffe0;
-    --accent2: #ff6b35;
-    --accent3: #a78bfa;
-    --text: #c8d8e8;
-    --muted: #4a6070;
-    --btc: #f7931a;
-    --oil: #22c55e;
-    --sp: #60a5fa;
-  }
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Space Mono', monospace;
-    font-size: 13px;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+:root {
+  --bg:#05080d;--surface:#0b1018;--border:#161f2c;--border2:#1e2d3d;
+  --text:#bdd0e0;--muted:#3d5570;--dim:#243344;
+  --accent:#00d4ff;--gold:#f5a623;--red:#ff4757;--green:#2ed573;--purple:#bd93f9;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;min-height:100vh;overflow-x:hidden;}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px);pointer-events:none;z-index:9999;}
 
-  /* Grid noise background */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(0,255,224,0.015) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,255,224,0.015) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
+header{border-bottom:1px solid var(--border);padding:0 40px;height:56px;display:flex;align-items:center;justify-content:space-between;background:rgba(5,8,13,0.97);backdrop-filter:blur(12px);position:sticky;top:0;z-index:100;}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:3px;color:#fff;}
+.logo em{color:var(--accent);font-style:normal;}
+.hdr-right{display:flex;align-items:center;gap:28px;font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);}
+.btc-live{display:flex;align-items:center;gap:8px;}
+.btc-price{font-size:15px;font-weight:500;color:var(--gold);font-family:'DM Mono',monospace;}
+.pulse{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:blink 2s ease infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
 
-  /* Header */
-  header {
-    position: relative;
-    z-index: 10;
-    border-bottom: 1px solid var(--border);
-    padding: 18px 32px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: rgba(8,12,16,0.95);
-    backdrop-filter: blur(8px);
-  }
-  .logo {
-    font-family: 'Syne', sans-serif;
-    font-weight: 800;
-    font-size: 22px;
-    letter-spacing: -0.5px;
-  }
-  .logo span { color: var(--accent); }
-  .header-meta {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-    color: var(--muted);
-    font-size: 11px;
-  }
-  .live-dot {
-    display: inline-block;
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: var(--accent);
-    box-shadow: 0 0 8px var(--accent);
-    animation: pulse 2s infinite;
-  }
-  @keyframes pulse {
-    0%,100% { opacity: 1; }
-    50% { opacity: 0.3; }
-  }
+.wrap{display:grid;grid-template-columns:1fr 300px;min-height:calc(100vh - 56px);}
+.main{padding:32px 40px;border-right:1px solid var(--border);overflow-y:auto;}
+.sidebar{overflow-y:auto;display:flex;flex-direction:column;}
 
-  /* Layout */
-  .layout {
-    position: relative;
-    z-index: 1;
-    display: grid;
-    grid-template-columns: 1fr 320px;
-    grid-template-rows: auto 1fr;
-    gap: 0;
-    height: calc(100vh - 61px);
-  }
+.hero{margin-bottom:28px;padding:24px 28px;background:linear-gradient(135deg,#0b1825,#080f1a);border:1px solid var(--border2);border-left:3px solid var(--accent);position:relative;overflow:hidden;}
+.hero::before{content:'mNAV';position:absolute;right:-10px;top:-20px;font-family:'Bebas Neue',sans-serif;font-size:120px;color:rgba(0,212,255,0.04);pointer-events:none;}
+.hero-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);margin-bottom:6px;}
+.hero-title{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:2px;color:#fff;line-height:1;margin-bottom:8px;}
+.hero-desc{font-size:12px;color:var(--muted);line-height:1.6;max-width:560px;}
 
-  /* Main content */
-  .main {
-    overflow-y: auto;
-    padding: 24px 28px;
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
+.sec{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:12px;}
+.sec::after{content:'';flex:1;height:1px;background:var(--border);}
 
-  /* Ticker strip */
-  .tickers {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-  }
-  .ticker-card {
-    border: 1px solid var(--border);
-    background: var(--panel);
-    padding: 16px 20px;
-    position: relative;
-    overflow: hidden;
-    transition: border-color 0.2s;
-  }
-  .ticker-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-  }
-  .ticker-card.btc::before { background: var(--btc); }
-  .ticker-card.oil::before { background: var(--oil); }
-  .ticker-card.sp::before  { background: var(--sp); }
-  .ticker-card:hover { border-color: var(--muted); }
-  .ticker-label {
-    font-family: 'Syne', sans-serif;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 2px;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-bottom: 8px;
-  }
-  .ticker-price {
-    font-family: 'Syne', sans-serif;
-    font-size: 28px;
-    font-weight: 800;
-    letter-spacing: -1px;
-    line-height: 1;
-  }
-  .ticker-card.btc .ticker-price { color: var(--btc); }
-  .ticker-card.oil .ticker-price { color: var(--oil); }
-  .ticker-card.sp  .ticker-price { color: var(--sp); }
-  .ticker-change {
-    margin-top: 6px;
-    font-size: 12px;
-    color: var(--muted);
-  }
-  .ticker-change.up   { color: #4ade80; }
-  .ticker-change.down { color: #f87171; }
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);padding:16px;}
+.stat-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;font-family:'DM Mono',monospace;}
+.stat-val{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1px;line-height:1;}
+.stat-val.green{color:var(--green)}.stat-val.gold{color:var(--gold)}.stat-val.red{color:var(--red)}.stat-val.accent{color:var(--accent)}
+.stat-sub{font-size:10px;color:var(--muted);margin-top:4px;font-family:'DM Mono',monospace;}
 
-  /* Section titles */
-  .section-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .section-title::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
+.bars-wrap{margin-bottom:28px;}
+.bar-row{display:grid;grid-template-columns:90px 1fr 90px;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);opacity:0;animation:fadeUp .4s forwards;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.bar-ticker{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;color:#fff;}
+.bar-ticker small{display:block;font-size:9px;color:var(--muted);font-weight:400;margin-top:1px;}
+.bar-track{height:20px;background:var(--surface);border:1px solid var(--border);position:relative;overflow:hidden;}
+.bar-fill{height:100%;position:absolute;left:0;top:0;transition:width 1s cubic-bezier(.16,1,.3,1);}
+.bar-fill.c-btc{background:linear-gradient(90deg,#1a3a1a,var(--green))}
+.bar-fill.c-mid{background:linear-gradient(90deg,#3a2a0a,var(--gold))}
+.bar-fill.c-high{background:linear-gradient(90deg,#3a1a0a,var(--red))}
+.bar-fill.c-none{background:var(--dim);width:100%!important}
+.bar-val{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;text-align:right;}
+.bar-val.c-btc{color:var(--green)}.bar-val.c-mid{color:var(--gold)}.bar-val.c-high{color:var(--red)}.bar-val.c-none{color:var(--muted)}
 
-  /* Chart panel */
-  .chart-panel {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    padding: 20px;
-  }
-  .chart-controls {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .chart-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 14px;
-    font-weight: 600;
-  }
-  .toggle-group {
-    display: flex;
-    gap: 6px;
-  }
-  .toggle-btn {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    padding: 4px 12px;
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .toggle-btn.active { border-color: var(--accent); color: var(--accent); }
-  .toggle-btn:hover:not(.active) { border-color: var(--muted); color: var(--text); }
-  .chart-wrap { position: relative; height: 240px; }
+.legend{display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap;}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;}
+.legend-dot{width:10px;height:10px;border-radius:2px;}
 
-  /* Correlation panel */
-  .corr-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-  .corr-card {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-  .corr-label { font-size: 11px; color: var(--muted); }
-  .corr-value {
-    font-family: 'Syne', sans-serif;
-    font-size: 32px;
-    font-weight: 800;
-    letter-spacing: -1px;
-  }
-  .corr-value.positive { color: var(--accent); }
-  .corr-value.negative { color: var(--accent2); }
-  .corr-bar-bg {
-    height: 3px;
-    background: var(--border);
-    position: relative;
-    overflow: hidden;
-  }
-  .corr-bar-fill {
-    position: absolute;
-    top: 0; bottom: 0;
-    left: 50%;
-    transition: width 1s ease;
-  }
-  .corr-bar-fill.positive { background: var(--accent); transform: none; }
-  .corr-bar-fill.negative { background: var(--accent2); right: 50%; left: auto; }
+.chart-panel{background:var(--surface);border:1px solid var(--border);padding:20px;margin-bottom:28px;}
+.chart-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;}
+.chart-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;color:#fff;}
+.chart-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.pills{display:flex;flex-wrap:wrap;gap:5px;max-width:260px;justify-content:flex-end;}
+.pill{font-family:'DM Mono',monospace;font-size:10px;padding:3px 8px;border:1px solid var(--border2);cursor:pointer;color:var(--muted);transition:all .15s;background:transparent;}
+.pill.on{color:#fff;border-color:currentColor;}
+.MARA.on{color:#2ed573}.RIOT.on{color:#f5a623}.CORZ.on{color:#00d4ff}.CLSK.on{color:#ff4757}
+.CIFR.on{color:#bd93f9}.IREN.on{color:#ff9f43}.BTDR.on{color:#48dbfb}.WULF.on{color:#ff6b81}
+.HUT.on{color:#a29bfe}.BTBT.on{color:#55efc4}
+.chart-wrap{height:260px;position:relative;}
 
-  /* AI Summary */
-  .ai-panel {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    padding: 20px;
-    position: relative;
-    overflow: hidden;
-  }
-  .ai-panel::before {
-    content: '';
-    position: absolute;
-    top: -40px; right: -40px;
-    width: 120px; height: 120px;
-    background: radial-gradient(circle, rgba(167,139,250,0.08), transparent 70%);
-    pointer-events: none;
-  }
-  .ai-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 14px;
-  }
-  .ai-badge {
-    font-size: 10px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    background: rgba(167,139,250,0.12);
-    color: var(--accent3);
-    border: 1px solid rgba(167,139,250,0.25);
-    padding: 3px 8px;
-  }
-  .ai-content {
-    color: var(--text);
-    line-height: 1.7;
-    font-size: 12px;
-    min-height: 80px;
-  }
-  .ai-content.loading { color: var(--muted); }
-  .ai-refresh {
-    margin-top: 12px;
-    background: transparent;
-    border: 1px solid rgba(167,139,250,0.3);
-    color: var(--accent3);
-    padding: 6px 16px;
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .ai-refresh:hover { background: rgba(167,139,250,0.08); }
-  .ai-refresh:disabled { opacity: 0.4; cursor: not-allowed; }
+.ai-panel{background:linear-gradient(135deg,#0d0b18,#0b1018);border:1px solid var(--border2);border-top:2px solid var(--purple);padding:20px;}
+.ai-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.ai-badge{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;background:rgba(189,147,249,.12);color:var(--purple);border:1px solid rgba(189,147,249,.25);padding:3px 8px;}
+.ai-title{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;color:#fff;}
+.ai-body{font-size:12.5px;line-height:1.75;color:var(--text);min-height:72px;}
+.ai-body.loading{color:var(--muted);font-style:italic;}
+.ai-ts{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-top:10px;}
 
-  /* Sidebar */
-  .sidebar {
-    overflow-y: auto;
-    background: var(--panel);
-    display: flex;
-    flex-direction: column;
-  }
-  .sidebar-header {
-    padding: 20px 20px 12px;
-    border-bottom: 1px solid var(--border);
-    position: sticky;
-    top: 0;
-    background: var(--panel);
-    z-index: 5;
-  }
-  .sidebar-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 1px;
-  }
-  .news-list { padding: 12px 0; }
-  .news-item {
-    padding: 14px 20px;
-    border-bottom: 1px solid var(--border);
-    cursor: pointer;
-    transition: background 0.15s;
-    text-decoration: none;
-    display: block;
-    color: inherit;
-  }
-  .news-item:hover { background: rgba(255,255,255,0.02); }
-  .news-source {
-    font-size: 10px;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: 5px;
-  }
-  .news-headline {
-    font-size: 12px;
-    line-height: 1.5;
-    color: var(--text);
-    margin-bottom: 5px;
-  }
-  .news-time { font-size: 10px; color: var(--muted); }
-  .news-sentiment {
-    display: inline-block;
-    font-size: 10px;
-    padding: 2px 6px;
-    margin-top: 4px;
-  }
-  .news-sentiment.bullish { background: rgba(74,222,128,0.1); color: #4ade80; }
-  .news-sentiment.bearish { background: rgba(248,113,113,0.1); color: #f87171; }
-  .news-sentiment.neutral { background: rgba(100,116,139,0.1); color: var(--muted); }
+.sidebar-hdr{padding:20px 20px 14px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:5;}
+.sidebar-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:#fff;}
+.sidebar-sub{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px;}
+.news-item{display:block;padding:14px 20px;border-bottom:1px solid var(--border);text-decoration:none;color:inherit;transition:background .15s;}
+.news-item:hover{background:rgba(255,255,255,.02);}
+.news-src{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:5px;}
+.news-hed{font-size:12px;line-height:1.5;color:var(--text);margin-bottom:5px;}
+.news-meta{display:flex;align-items:center;gap:8px;}
+.news-time{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;}
+.badge{font-size:9px;padding:2px 6px;letter-spacing:1px;text-transform:uppercase;font-family:'DM Mono',monospace;}
+.badge.bull{background:rgba(46,213,115,.1);color:var(--green)}
+.badge.bear{background:rgba(255,71,87,.1);color:var(--red)}
+.badge.neu{background:rgba(61,85,112,.15);color:var(--muted)}
+.sidebar-footer{margin-top:auto;padding:14px 20px;border-top:1px solid var(--border);font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;line-height:1.6;}
 
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--border); }
-
-  /* Loading spinner */
-  .spinner {
-    display: inline-block;
-    width: 12px; height: 12px;
-    border: 2px solid var(--border);
-    border-top-color: var(--accent3);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .footer-note {
-    font-size: 10px;
-    color: var(--muted);
-    padding: 10px 20px;
-    border-top: 1px solid var(--border);
-    text-align: center;
-  }
-
-  @media (max-width: 900px) {
-    .layout { grid-template-columns: 1fr; grid-template-rows: auto auto; height: auto; }
-    .sidebar { border-top: 1px solid var(--border); height: 400px; }
-    .main { border-right: none; }
-    .tickers { grid-template-columns: 1fr; }
-    .corr-grid { grid-template-columns: 1fr; }
-  }
+.spin{display:inline-block;width:11px;height:11px;border:2px solid var(--border2);border-top-color:var(--purple);border-radius:50%;animation:rot .7s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes rot{to{transform:rotate(360deg)}}
+::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-thumb{background:var(--border2);}
+@media(max-width:900px){.wrap{grid-template-columns:1fr;}.main{padding:20px;border-right:none;}.stats-grid{grid-template-columns:1fr 1fr;}.sidebar{border-top:1px solid var(--border);}}
 </style>
 </head>
 <body>
-
 <header>
-  <div class="logo">BTC <span>COMPASS</span></div>
-  <div class="header-meta">
-    <span><span class="live-dot"></span> LIVE DATA</span>
-    <span id="last-updated">—</span>
-    <span>30D WINDOW</span>
+  <div class="logo">MINING <em>→</em> AI</div>
+  <div class="hdr-right">
+    <div class="btc-live"><span class="pulse"></span><span>BTC</span><span class="btc-price" id="hdr-btc">—</span></div>
+    <span id="hdr-date">—</span>
   </div>
 </header>
 
-<div class="layout">
-  <!-- MAIN -->
-  <div class="main">
+<div class="wrap">
+<div class="main">
 
-    <!-- Ticker strip -->
-    <div class="tickers">
-      <div class="ticker-card btc">
-        <div class="ticker-label">Bitcoin BTC</div>
-        <div class="ticker-price" id="btc-price">—</div>
-        <div class="ticker-change" id="btc-change">Loading...</div>
-      </div>
-      <div class="ticker-card oil">
-        <div class="ticker-label">WTI Crude Oil</div>
-        <div class="ticker-price" id="oil-price">—</div>
-        <div class="ticker-change" id="oil-change">Loading...</div>
-      </div>
-      <div class="ticker-card sp">
-        <div class="ticker-label">S&amp;P 500</div>
-        <div class="ticker-price" id="sp-price">—</div>
-        <div class="ticker-change" id="sp-change">Loading...</div>
-      </div>
-    </div>
-
-    <!-- Price chart -->
-    <div class="chart-panel">
-      <div class="chart-controls">
-        <div class="chart-title">30-Day Normalized Price (Base 100)</div>
-        <div class="toggle-group">
-          <button class="toggle-btn active" onclick="toggleSeries('btc', this)">BTC</button>
-          <button class="toggle-btn active" onclick="toggleSeries('oil', this)">OIL</button>
-          <button class="toggle-btn active" onclick="toggleSeries('sp', this)">S&amp;P</button>
-        </div>
-      </div>
-      <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
-    </div>
-
-    <!-- Correlation -->
-    <div>
-      <div class="section-title">30-Day Correlation with BTC</div>
-      <div class="corr-grid">
-        <div class="corr-card">
-          <div class="corr-label">BTC / S&amp;P 500</div>
-          <div class="corr-value" id="corr-sp">—</div>
-          <div class="corr-bar-bg"><div class="corr-bar-fill" id="corr-sp-bar" style="width:0"></div></div>
-          <div class="corr-label" style="margin-top:4px" id="corr-sp-desc">Calculating...</div>
-        </div>
-        <div class="corr-card">
-          <div class="corr-label">BTC / WTI Oil</div>
-          <div class="corr-value" id="corr-oil">—</div>
-          <div class="corr-bar-bg"><div class="corr-bar-fill" id="corr-oil-bar" style="width:0"></div></div>
-          <div class="corr-label" style="margin-top:4px" id="corr-oil-desc">Calculating...</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- AI Summary -->
-    <div class="ai-panel">
-      <div class="ai-header">
-        <div class="section-title" style="margin-bottom:0">AI Market Insight</div>
-        <div class="ai-badge">Claude AI</div>
-      </div>
-      <div class="ai-content loading" id="ai-text">Analyzing market correlations...</div>
-      <button class="ai-refresh" id="ai-btn" onclick="fetchAISummary()">↻ Regenerate Analysis</button>
-    </div>
-
-  </div><!-- /main -->
-
-  <!-- SIDEBAR: News -->
-  <div class="sidebar">
-    <div class="sidebar-header">
-      <div class="sidebar-title">Market News</div>
-    </div>
-    <div class="news-list" id="news-list">
-      <div style="padding:20px;color:var(--muted)">Loading news...</div>
-    </div>
-    <div class="footer-note">Data: CoinGecko · Alpha Vantage · NewsAPI</div>
+  <div class="hero">
+    <div class="hero-label">DAT.co Indicator · Top 10 Bitcoin Mining &amp; AI Compute Companies</div>
+    <div class="hero-title">mNAV: Market Premium vs BTC Treasury</div>
+    <div class="hero-desc">mNAV = Market Cap ÷ (BTC Holdings × BTC Price). A ratio &gt;1 means the market values the company above its BTC assets. Extreme mNAV signals AI/HPC revenue expectations — not Bitcoin treasury value.</div>
   </div>
+
+  <div class="sec">Today's Snapshot</div>
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-label">BTC Price</div><div class="stat-val gold" id="s-btc">—</div><div class="stat-sub">USD</div></div>
+    <div class="stat-card"><div class="stat-label">Median mNAV</div><div class="stat-val accent" id="s-med">—</div><div class="stat-sub">top 10 miners</div></div>
+    <div class="stat-card"><div class="stat-label">AI-Pivot (no BTC)</div><div class="stat-val red" id="s-ai">—</div><div class="stat-sub">companies</div></div>
+  </div>
+
+  <div class="sec">mNAV by Company — Latest</div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>≤ 5× BTC-backed</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>5–50× transitioning</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>&gt;50× AI-premium</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--dim)"></div>N/A no BTC held</div>
+  </div>
+  <div class="bars-wrap" id="bars"></div>
+
+  <div class="chart-panel">
+    <div class="chart-header">
+      <div><div class="chart-title">30-Day mNAV Trend</div><div class="chart-sub">Click tickers to toggle</div></div>
+      <div class="pills" id="pills"></div>
+    </div>
+    <div class="chart-wrap"><canvas id="lineChart"></canvas></div>
+  </div>
+
+  <div class="ai-panel">
+    <div class="ai-head">
+      <div class="ai-title">AI Market Analysis</div>
+      <div class="ai-badge">Claude AI · Generated by Lambda</div>
+    </div>
+    <div class="ai-body loading" id="ai-body"><span class="spin"></span>Loading analysis...</div>
+    <div class="ai-ts" id="ai-ts"></div>
+  </div>
+
+</div>
+
+<div class="sidebar">
+  <div class="sidebar-hdr">
+    <div class="sidebar-title">Market News</div>
+    <div class="sidebar-sub" id="news-count">Loading...</div>
+  </div>
+  <div id="news-list"></div>
+  <div class="sidebar-footer">
+    Data: CoinGecko · Yahoo Finance<br>
+    AI: Claude Haiku via AWS Lambda<br>
+    Updates every 7 hours
+  </div>
+</div>
 </div>
 
 <script>
-// ─── CONFIG ───────────────────────────────────────────────
-// Replace with your actual keys in GitHub Actions secrets
-// For local dev, use mock data below
-const NEWS_API_KEY = window.NEWS_API_KEY || '';  // injected by GitHub Actions
-const ALPHA_KEY    = window.ALPHA_KEY    || '';  // injected by GitHub Actions
+// ── CONFIG ─────────────────────────────────────────────────
+const S3_URL   = window.S3_URL   || 'https://muta-btc-data-441479487379-ap-southeast-2-an.s3.ap-southeast-2.amazonaws.com/btc/history.json';
+const NEWS_KEY = window.NEWS_KEY || '';
 
-// ─── DATA STORE ───────────────────────────────────────────
-let chartInstance = null;
-let seriesVisible = { btc: true, oil: true, sp: true };
-let globalData = { btc: [], oil: [], sp: [], labels: [] };
+const COLORS = {
+  MARA:'#2ed573',RIOT:'#f5a623',CORZ:'#00d4ff',CLSK:'#ff4757',
+  CIFR:'#bd93f9',IREN:'#ff9f43',BTDR:'#48dbfb',WULF:'#ff6b81',
+  HUT:'#a29bfe',BTBT:'#55efc4'
+};
+let chartInst = null;
+let visible = {};
 
-// ─── UTILS ────────────────────────────────────────────────
-const normalize = arr => {
-  const base = arr[0] || 1;
-  return arr.map(v => +((v / base) * 100).toFixed(2));
-};
-const pearson = (x, y) => {
-  const n = x.length;
-  const mx = x.reduce((a,b)=>a+b,0)/n, my = y.reduce((a,b)=>a+b,0)/n;
-  const num = x.reduce((s,xi,i)=>s+(xi-mx)*(y[i]-my),0);
-  const den = Math.sqrt(x.reduce((s,xi)=>s+(xi-mx)**2,0)*y.reduce((s,yi)=>s+(yi-my)**2,0));
-  return den ? +(num/den).toFixed(3) : 0;
-};
-const fmtPct = v => (v>=0?'+':'')+v.toFixed(2)+'%';
-const last = arr => arr[arr.length-1];
-const genDates = n => {
-  const d = new Date(); const out = [];
-  for(let i=n-1;i>=0;i--){
-    const t=new Date(d); t.setDate(t.getDate()-i);
-    out.push(t.toLocaleDateString('en-US',{month:'short',day:'numeric'}));
-  }
-  return out;
-};
-
-// ─── MOCK DATA (fallback when API keys absent) ─────────────
-function genMock(base, vol, n=30) {
-  const arr=[base]; let v=base;
-  for(let i=1;i<n;i++){v+=v*(Math.random()-0.48)*vol;arr.push(+v.toFixed(2));}
-  return arr;
+// ── LOAD S3 ────────────────────────────────────────────────
+async function loadS3() {
+  try {
+    const r = await fetch(S3_URL + '?t=' + Date.now());
+    if(!r.ok) throw new Error();
+    return await r.json();
+  } catch { return genMock(); }
 }
-const mockNews = [
-  {source:'CoinDesk',title:'Bitcoin Holds Above $60K as ETF Inflows Accelerate',publishedAt:'2h ago',sentiment:'bullish',url:'#'},
-  {source:'Bloomberg',title:'S&P 500 Hits Record Amid Fed Rate-Cut Optimism',publishedAt:'4h ago',sentiment:'bullish',url:'#'},
-  {source:'Reuters',title:'Oil Prices Slide on Demand Concerns from China Data',publishedAt:'5h ago',sentiment:'bearish',url:'#'},
-  {source:'FT',title:'Crypto Correlation with Equities at 18-Month Low',publishedAt:'8h ago',sentiment:'neutral',url:'#'},
-  {source:'WSJ',title:'MicroStrategy Adds 2,500 BTC to Corporate Treasury',publishedAt:'10h ago',sentiment:'bullish',url:'#'},
-  {source:'CoinTelegraph',title:'On-Chain Data Shows Long-Term Holders Accumulating',publishedAt:'12h ago',sentiment:'bullish',url:'#'},
-  {source:'MarketWatch',title:'WTI Crude Dips Below $80 on Inventory Build',publishedAt:'1d ago',sentiment:'bearish',url:'#'},
-  {source:'Bloomberg',title:'Bitcoin Volatility Index Drops to 3-Month Low',publishedAt:'1d ago',sentiment:'neutral',url:'#'},
+
+function genMock() {
+  const cos = [
+    {ticker:'MARA',name:'Marathon Digital',  btc_holdings:38689,shares:369e6},
+    {ticker:'RIOT',name:'Riot Platforms',     btc_holdings:18005,shares:330e6},
+    {ticker:'CORZ',name:'Core Scientific',    btc_holdings:613,  shares:560e6},
+    {ticker:'CLSK',name:'CleanSpark',         btc_holdings:13363,shares:230e6},
+    {ticker:'CIFR',name:'Cipher Mining',      btc_holdings:1500, shares:620e6},
+    {ticker:'IREN',name:'Iris Energy',        btc_holdings:0,    shares:320e6},
+    {ticker:'BTDR',name:'Bitdeer',            btc_holdings:0,    shares:680e6},
+    {ticker:'WULF',name:'TeraWulf',           btc_holdings:4,    shares:408e6},
+    {ticker:'HUT', name:'Hut 8',             btc_holdings:13696,shares:165e6},
+    {ticker:'BTBT',name:'Bit Digital',        btc_holdings:6,    shares:150e6},
+  ];
+  const baseP = [9.5,16.11,17.66,9.88,15.42,36.83,10.36,18.05,61.43,1.33];
+  const hist = [];
+  for(let d=29;d>=0;d--) {
+    const dt = new Date(); dt.setDate(dt.getDate()-d);
+    const btcP = 70000 + (Math.random()-.45)*4000;
+    hist.push({
+      date: dt.toISOString().slice(0,10),
+      btc_price: +btcP.toFixed(0),
+      ai_summary: null,
+      companies: cos.map((c,i)=>{
+        const sp = baseP[i]*(0.88+Math.random()*.24);
+        const mc = sp*c.shares;
+        const nav = c.btc_holdings*btcP;
+        return {...c, stock_price:+sp.toFixed(2), market_cap:Math.round(mc),
+          btc_nav:Math.round(nav), mNAV: nav>0?+(mc/nav).toFixed(4):null};
+      })
+    });
+  }
+  return hist;
+}
+
+// ── NEWS ───────────────────────────────────────────────────
+const MOCK_NEWS = [
+  {src:'CoinDesk',hed:'Core Scientific Signs CoreWeave AI Deal, Cuts BTC to 613',time:'2h',sent:'bull',url:'#'},
+  {src:'Bloomberg',hed:'Bitcoin Miners Pivot to AI Compute Amid Halving Pressure',time:'4h',sent:'neu',url:'#'},
+  {src:'Reuters',hed:'TeraWulf Near-Exits Bitcoin Treasury as AI Revenue Soars',time:'6h',sent:'bull',url:'#'},
+  {src:'FT',hed:'MARA Holdings Holds BTC Strategy Unlike AI-Pivot Peers',time:'9h',sent:'neu',url:'#'},
+  {src:'CoinTelegraph',hed:'mNAV Ratios Surge for AI-Pivot Miners: Analysis',time:'12h',sent:'bull',url:'#'},
+  {src:'WSJ',hed:'Iris Energy Reports Zero BTC After Full AI Transition',time:'1d',sent:'neu',url:'#'},
+  {src:'The Block',hed:'Mining Stocks Diverge: Pure BTC Plays vs AI Infrastructure',time:'1d',sent:'neu',url:'#'},
+  {src:'Decrypt',hed:'Riot Platforms Expands Texas Facility for HPC Workloads',time:'2d',sent:'bull',url:'#'},
 ];
 
-// ─── FETCH BTC (CoinGecko — free, no key) ─────────────────
-async function fetchBTC() {
+async function loadNews() {
+  if(!NEWS_KEY) return MOCK_NEWS;
   try {
-    const r = await fetch('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=30&interval=daily');
-    if(!r.ok) throw new Error();
-    const d = await r.json();
-    return d.prices.map(p=>p[1]);
-  } catch { return genMock(62000, 0.025); }
-}
-
-// ─── FETCH OIL (Alpha Vantage) ─────────────────────────────
-async function fetchOil() {
-  if(!ALPHA_KEY) return genMock(78, 0.015);
-  try {
-    const r = await fetch(`https://www.alphavantage.co/query?function=WTI&interval=daily&apikey=${ALPHA_KEY}`);
-    const d = await r.json();
-    const vals = d.data?.slice(0,30).reverse().map(x=>+x.value) || [];
-    return vals.length ? vals : genMock(78, 0.015);
-  } catch { return genMock(78, 0.015); }
-}
-
-// ─── FETCH S&P via Yahoo proxy ─────────────────────────────
-async function fetchSP() {
-  try {
-    const end = Math.floor(Date.now()/1000);
-    const start = end - 30*24*3600;
-    const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?interval=1d&period1=${start}&period2=${end}`);
-    const d = await r.json();
-    const closes = d.chart.result[0].indicators.quote[0].close.filter(Boolean);
-    return closes;
-  } catch { return genMock(5200, 0.01); }
-}
-
-// ─── FETCH NEWS ────────────────────────────────────────────
-async function fetchNews() {
-  if(!NEWS_API_KEY) return mockNews;
-  try {
-    const r = await fetch(`https://newsapi.org/v2/everything?q=bitcoin+OR+cryptocurrency+OR+oil+OR+SP500&sortBy=publishedAt&pageSize=12&apiKey=${NEWS_API_KEY}`);
+    const q = 'bitcoin+mining+OR+MARA+OR+RIOT+OR+"Core Scientific"+OR+TeraWulf+OR+mNAV';
+    const r = await fetch(`https://newsapi.org/v2/everything?q=${q}&sortBy=publishedAt&pageSize=12&apiKey=${NEWS_KEY}`);
     const d = await r.json();
     return d.articles?.map(a=>({
-      source: a.source.name,
-      title: a.title,
-      publishedAt: new Date(a.publishedAt).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}),
-      sentiment: guessSentiment(a.title),
-      url: a.url
-    })) || mockNews;
-  } catch { return mockNews; }
+      src: a.source.name, hed: a.title,
+      time: new Date(a.publishedAt).toLocaleDateString('en',{month:'short',day:'numeric'}),
+      sent: sent(a.title), url: a.url
+    })) || MOCK_NEWS;
+  } catch { return MOCK_NEWS; }
 }
 
-function guessSentiment(title='') {
-  const t = title.toLowerCase();
-  const bull = ['surges','hits record','rises','gains','bullish','rally','jumps','soars','buys','accumulates'];
-  const bear = ['drops','falls','slips','crash','bearish','slides','dips','concern','plunges','fears'];
-  if(bull.some(w=>t.includes(w))) return 'bullish';
-  if(bear.some(w=>t.includes(w))) return 'bearish';
-  return 'neutral';
+function sent(t=''){
+  const l=t.toLowerCase();
+  if(['surges','gains','expands','deal','record','soars','bullish','signs'].some(w=>l.includes(w))) return 'bull';
+  if(['drops','crash','falls','concern','bearish','exits','declines','cuts'].some(w=>l.includes(w))) return 'bear';
+  return 'neu';
 }
 
-// ─── RENDER NEWS ───────────────────────────────────────────
-function renderNews(items) {
-  const el = document.getElementById('news-list');
-  el.innerHTML = items.map(n=>`
-    <a class="news-item" href="${n.url}" target="_blank" rel="noopener">
-      <div class="news-source">${n.source}</div>
-      <div class="news-headline">${n.title}</div>
-      <div class="news-time">${n.publishedAt}</div>
-      <span class="news-sentiment ${n.sentiment}">${n.sentiment.toUpperCase()}</span>
-    </a>
-  `).join('');
-}
+// ── RENDER ─────────────────────────────────────────────────
+function mCls(v){ return v==null?'c-none':v<=5?'c-btc':v<=50?'c-mid':'c-high'; }
 
-// ─── RENDER TICKERS ────────────────────────────────────────
-function renderTicker(id, prices, prefix='$') {
-  const curr = last(prices), prev = prices[prices.length-2]||curr;
-  const pct = ((curr-prev)/prev)*100;
-  const priceEl = document.getElementById(`${id}-price`);
-  const changeEl = document.getElementById(`${id}-change`);
-  priceEl.textContent = prefix + curr.toLocaleString('en-US',{maximumFractionDigits:2});
-  changeEl.textContent = fmtPct(pct) + ' (1d)';
-  changeEl.className = 'ticker-change ' + (pct>=0?'up':'down');
-}
-
-// ─── RENDER CHART ──────────────────────────────────────────
-function renderChart(labels, btc, oil, sp) {
-  const ctx = document.getElementById('priceChart').getContext('2d');
-  if(chartInstance) chartInstance.destroy();
-
-  const baseOpts = (color, label, data) => ({
-    label, data,
-    borderColor: color,
-    backgroundColor: color+'18',
-    fill: true,
-    tension: 0.4,
-    pointRadius: 0,
-    pointHoverRadius: 4,
-    borderWidth: 2,
+function renderBars(companies, maxV) {
+  const el = document.getElementById('bars');
+  el.innerHTML = '';
+  companies.forEach((c,i)=>{
+    const cls = mCls(c.mNAV);
+    const pct = c.mNAV ? Math.min(c.mNAV/Math.max(maxV,1)*100,100) : 100;
+    const lbl = c.mNAV ? c.mNAV.toFixed(1)+'×' : 'N/A';
+    const row = document.createElement('div');
+    row.className = 'bar-row';
+    row.style.animationDelay = (i*50)+'ms';
+    row.innerHTML = `
+      <div class="bar-ticker">${c.ticker}<small>${(c.name||'').split(' ')[0]}</small></div>
+      <div class="bar-track">
+        <div class="bar-fill ${cls}" style="width:${cls==='c-none'?100:0}%" data-pct="${pct}"></div>
+      </div>
+      <div class="bar-val ${cls}">${lbl}</div>`;
+    el.appendChild(row);
   });
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    el.querySelectorAll('.bar-fill:not(.c-none)').forEach(b=>{ b.style.width=b.dataset.pct+'%'; });
+  }));
+}
 
-  chartInstance = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        baseOpts('var(--btc)', 'Bitcoin', normalize(btc)),
-        baseOpts('var(--oil)', 'WTI Oil', normalize(oil)),
-        baseOpts('var(--sp)',  'S&P 500', normalize(sp)),
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: {
-          display: false,
-        },
-        tooltip: {
-          backgroundColor: '#0e1318',
-          borderColor: '#1e2a34',
-          borderWidth: 1,
-          titleColor: '#c8d8e8',
-          bodyColor: '#4a6070',
-          padding: 10,
-          callbacks: {
-            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}`
-          }
-        }
+function renderStats(latest) {
+  document.getElementById('hdr-btc').textContent = '$'+latest.btc_price.toLocaleString();
+  document.getElementById('hdr-date').textContent = latest.date;
+  document.getElementById('s-btc').textContent = '$'+latest.btc_price.toLocaleString();
+  const mnavs = latest.companies.filter(c=>c.mNAV).map(c=>c.mNAV).sort((a,b)=>a-b);
+  const med = mnavs.length ? mnavs[Math.floor(mnavs.length/2)].toFixed(1) : '—';
+  document.getElementById('s-med').textContent = med+'×';
+  const nobtc = latest.companies.filter(c=>!c.btc_holdings||c.btc_holdings<1).length;
+  document.getElementById('s-ai').textContent = nobtc;
+}
+
+function renderChart(history) {
+  const tickers = history[0].companies.map(c=>c.ticker);
+  const labels  = history.map(d=>d.date.slice(5));
+  const pillsEl = document.getElementById('pills');
+  pillsEl.innerHTML = '';
+  tickers.forEach((t,i)=>{
+    visible[t] = true;
+    const btn = document.createElement('button');
+    btn.className = `pill ${t} on`;
+    btn.textContent = t;
+    btn.onclick = ()=>{ visible[t]=!visible[t]; btn.classList.toggle('on',visible[t]); if(chartInst){ chartInst.getDatasetMeta(i).hidden=!visible[t]; chartInst.update(); } };
+    pillsEl.appendChild(btn);
+  });
+  const datasets = tickers.map(t=>({
+    label:t,
+    data: history.map(d=>{ const c=d.companies.find(x=>x.ticker===t); return c?.mNAV??null; }),
+    borderColor: COLORS[t]||'#fff',
+    backgroundColor: (COLORS[t]||'#fff')+'18',
+    fill:false, tension:0.4, pointRadius:0, pointHoverRadius:5, borderWidth:1.5, spanGaps:true,
+  }));
+  const ctx = document.getElementById('lineChart').getContext('2d');
+  if(chartInst) chartInst.destroy();
+  chartInst = new Chart(ctx,{
+    type:'line', data:{labels,datasets},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{backgroundColor:'#0b1018',borderColor:'#1e2d3d',borderWidth:1,
+          titleColor:'#bdd0e0',bodyColor:'#3d5570',padding:10,
+          callbacks:{label:ctx=>ctx.parsed.y!=null?` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}×`:` ${ctx.dataset.label}: N/A`}}
       },
-      scales: {
-        x: {
-          ticks: { color: 'var(--muted)', font: { family: 'Space Mono', size: 10 }, maxTicksLimit: 8 },
-          grid: { color: 'rgba(30,42,52,0.6)' },
-        },
-        y: {
-          ticks: { color: 'var(--muted)', font: { family: 'Space Mono', size: 10 }, callback: v => v },
-          grid: { color: 'rgba(30,42,52,0.6)' },
-        }
+      scales:{
+        x:{ticks:{color:'#3d5570',font:{family:'DM Mono',size:10},maxTicksLimit:8},grid:{color:'#161f2c'}},
+        y:{ticks:{color:'#3d5570',font:{family:'DM Mono',size:10},callback:v=>v+'×'},grid:{color:'#161f2c'}}
       }
     }
   });
 }
 
-// ─── RENDER CORRELATION ────────────────────────────────────
-function renderCorr(btc, oil, sp) {
-  const corrSP  = pearson(btc, sp);
-  const corrOil = pearson(btc, oil);
-
-  ['sp','oil'].forEach((id, i) => {
-    const val = i===0 ? corrSP : corrOil;
-    const el = document.getElementById(`corr-${id}`);
-    const bar = document.getElementById(`corr-${id}-bar`);
-    const desc = document.getElementById(`corr-${id}-desc`);
-    el.textContent = val.toFixed(2);
-    el.className = 'corr-value ' + (val>=0?'positive':'negative');
-    bar.className = 'corr-bar-fill ' + (val>=0?'positive':'negative');
-    const pct = Math.abs(val)*50;
-    bar.style.width = pct+'%';
-    desc.textContent = val > 0.5 ? 'Strong positive correlation'
-      : val > 0.2 ? 'Moderate positive correlation'
-      : val < -0.5 ? 'Strong inverse correlation'
-      : val < -0.2 ? 'Moderate inverse correlation'
-      : 'Weak / no correlation';
-  });
-}
-
-// ─── TOGGLE SERIES ─────────────────────────────────────────
-function toggleSeries(key, btn) {
-  if(!chartInstance) return;
-  const idx = {btc:0, oil:1, sp:2}[key];
-  const meta = chartInstance.getDatasetMeta(idx);
-  seriesVisible[key] = !seriesVisible[key];
-  meta.hidden = !seriesVisible[key];
-  btn.classList.toggle('active', seriesVisible[key]);
-  chartInstance.update();
-}
-
-// ─── AI SUMMARY ────────────────────────────────────────────
-async function fetchAISummary() {
-  const btn = document.getElementById('ai-btn');
-  const el  = document.getElementById('ai-text');
-  btn.disabled = true;
-  el.className = 'ai-content loading';
-  el.innerHTML = '<span class="spinner"></span> Analyzing with Claude...';
-
-  const btc = globalData.btc; const oil = globalData.oil; const sp = globalData.sp;
-  if(!btc.length) { el.textContent = 'Data not loaded yet. Please wait.'; btn.disabled=false; return; }
-
-  const corrSP  = pearson(btc, sp);
-  const corrOil = pearson(btc, oil);
-  const btcChg  = ((last(btc)-btc[0])/btc[0]*100).toFixed(1);
-  const oilChg  = ((last(oil)-oil[0])/oil[0]*100).toFixed(1);
-  const spChg   = ((last(sp)-sp[0])/sp[0]*100).toFixed(1);
-
-  const prompt = `You are a concise financial analyst. Analyze this 30-day market data:
-
-- Bitcoin (BTC): ${btcChg}% change, current $${last(btc).toFixed(0)}
-- WTI Oil: ${oilChg}% change, current $${last(oil).toFixed(2)}
-- S&P 500: ${spChg}% change
-- BTC/S&P correlation: ${corrSP}
-- BTC/Oil correlation: ${corrOil}
-
-In 3-4 sentences, explain: (1) what the correlations reveal about BTC's current behavior as a risk asset, (2) how oil and equity movements may be influencing crypto sentiment, (3) one key takeaway for investors. Be direct and specific. No bullet points.`;
-
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-    const data = await res.json();
-    const text = data.content?.[0]?.text || 'Analysis unavailable.';
-    el.className = 'ai-content';
-    el.textContent = text;
-  } catch(e) {
-    el.className = 'ai-content';
-    el.textContent = `With a 30-day BTC change of ${btcChg}% and a BTC/S&P correlation of ${corrSP}, Bitcoin is ${Math.abs(corrSP)>0.5?'closely tracking':'diverging from'} equity markets. Oil's ${oilChg}% move and ${corrOil} correlation with BTC suggests ${corrOil>0?'macro risk-on sentiment aligning':'decoupling between'} energy and crypto markets. Investors should watch ${corrSP>0.5?'Fed signals':'on-chain accumulation'} as the primary near-term driver.`;
+function renderAI(latest) {
+  const el = document.getElementById('ai-body');
+  const ts = document.getElementById('ai-ts');
+  if(latest.ai_summary) {
+    el.className = 'ai-body';
+    el.textContent = latest.ai_summary;
+    ts.textContent = 'Generated ' + latest.timestamp + ' (Taiwan Time)';
+  } else {
+    el.className = 'ai-body';
+    el.textContent = 'AI analysis will appear after the next Lambda run (every 7 hours).';
   }
-  btn.disabled = false;
 }
 
-// ─── MAIN INIT ─────────────────────────────────────────────
+function renderNews(items) {
+  document.getElementById('news-count').textContent = items.length + ' articles';
+  document.getElementById('news-list').innerHTML = items.map(n=>`
+    <a class="news-item" href="${n.url||'#'}" target="_blank" rel="noopener">
+      <div class="news-src">${n.src}</div>
+      <div class="news-hed">${n.hed}</div>
+      <div class="news-meta">
+        <span class="news-time">${n.time}</span>
+        <span class="badge ${n.sent}">${n.sent==='bull'?'BULLISH':n.sent==='bear'?'BEARISH':'NEUTRAL'}</span>
+      </div>
+    </a>`).join('');
+}
+
+// ── INIT ───────────────────────────────────────────────────
 async function init() {
-  document.getElementById('last-updated').textContent =
-    'Updated ' + new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-
-  const [btc, oil, sp, news] = await Promise.all([fetchBTC(), fetchOil(), fetchSP(), fetchNews()]);
-
-  // Align lengths
-  const n = Math.min(btc.length, oil.length, sp.length, 30);
-  globalData.btc = btc.slice(-n);
-  globalData.oil = oil.slice(-n);
-  globalData.sp  = sp.slice(-n);
-  globalData.labels = genDates(n);
-
-  renderTicker('btc', globalData.btc, '$');
-  renderTicker('oil', globalData.oil, '$');
-  renderTicker('sp',  globalData.sp,  '');
-  renderChart(globalData.labels, globalData.btc, globalData.oil, globalData.sp);
-  renderCorr(globalData.btc, globalData.oil, globalData.sp);
+  const [history, news] = await Promise.all([loadS3(), loadNews()]);
+  const latest = history[history.length-1];
+  const mnavs  = latest.companies.map(c=>c.mNAV).filter(Boolean);
+  const maxV   = Math.max(...mnavs);
+  renderStats(latest);
+  renderBars(latest.companies, maxV);
+  renderChart(history);
+  renderAI(latest);
   renderNews(news);
-  fetchAISummary();
 }
-
 init();
 </script>
 </body>
