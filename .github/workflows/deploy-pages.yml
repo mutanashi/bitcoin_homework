@@ -2,11 +2,9 @@ name: Deploy BTC Dashboard to Pages
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - "btc-dashboard/**"
-      - ".github/workflows/deploy-pages.yml"
+    branches: [main]
+  schedule:
+    - cron: '0 */6 * * *'   # 每 6 小時自動更新
   workflow_dispatch:
 
 permissions:
@@ -16,18 +14,25 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Inject API keys into HTML
+        env:
+          NEWS_API_KEY: ${{ secrets.NEWS_API_KEY }}
+          ALPHA_KEY: ${{ secrets.ALPHA_KEY }}
+        run: |
+          sed -i "s|window.NEWS_API_KEY || ''|'${NEWS_API_KEY}'|g" btc-dashboard/index.html
+          sed -i "s|window.ALPHA_KEY    || ''|'${ALPHA_KEY}'|g"    btc-dashboard/index.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
