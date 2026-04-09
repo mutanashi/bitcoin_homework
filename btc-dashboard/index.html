@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+   <meta charset="utf-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1">
+   <title>BTC Price Dashboard</title>
+   <link rel="preconnect" href="https://fonts.googleapis.com">
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
+   <style>
+      :root {
+         --bg-0: #f7faf9;
+         --bg-1: #e9f4f1;
+         --surface: #ffffff;
+         --text-main: #12201d;
+         --text-soft: #45635e;
+         --accent: #0ea57a;
+         --accent-soft: #d8f5ec;
+         --line: #d5e5e1;
+         --good: #ff9d40;
+         --shadow: 0 12px 28px rgba(20, 68, 57, 0.08);
+      }
+
+      * {
+         box-sizing: border-box;
+      }
+
+      body {
+         margin: 0;
+         min-height: 100vh;
+         font-family: "Space Grotesk", "Segoe UI", sans-serif;
+         color: var(--text-main);
+         background:
+            radial-gradient(circle at 8% 18%, rgba(14, 165, 122, 0.16), transparent 38%),
+            radial-gradient(circle at 92% 22%, rgba(255, 157, 64, 0.18), transparent 34%),
+            linear-gradient(135deg, var(--bg-0), var(--bg-1));
+      }
+
+      .shell {
+         width: min(1100px, 92vw);
+         margin: 40px auto;
+         display: grid;
+         gap: 18px;
+         animation: fadeIn 550ms ease;
+      }
+
+      .hero {
+         background: var(--surface);
+         border: 1px solid var(--line);
+         border-radius: 20px;
+         padding: 20px;
+         box-shadow: var(--shadow);
+      }
+
+      .hero h1 {
+         margin: 0;
+         font-size: clamp(1.4rem, 2.6vw, 2rem);
+         letter-spacing: 0.02em;
+      }
+
+      .hero p {
+         margin: 8px 0 0;
+         color: var(--text-soft);
+         font-size: 0.96rem;
+      }
+
+      .stats {
+         display: grid;
+         grid-template-columns: repeat(3, minmax(0, 1fr));
+         gap: 14px;
+      }
+
+      .card {
+         background: var(--surface);
+         border: 1px solid var(--line);
+         border-radius: 16px;
+         box-shadow: var(--shadow);
+         padding: 16px 18px;
+         transform: translateY(8px);
+         opacity: 0;
+         animation: rise 500ms ease forwards;
+      }
+
+      .card:nth-child(2) {
+         animation-delay: 90ms;
+      }
+
+      .card:nth-child(3) {
+         animation-delay: 180ms;
+      }
+
+      .label {
+         margin: 0;
+         color: var(--text-soft);
+         font-size: 0.78rem;
+         text-transform: uppercase;
+         letter-spacing: 0.08em;
+      }
+
+      .value {
+         margin: 8px 0 0;
+         font-weight: 700;
+         line-height: 1.2;
+         font-size: clamp(1.2rem, 2.4vw, 1.85rem);
+      }
+
+      .mono {
+         font-family: "IBM Plex Mono", Consolas, monospace;
+         font-size: clamp(0.95rem, 1.8vw, 1.2rem);
+         letter-spacing: 0.02em;
+      }
+
+      .chart-wrap {
+         background: var(--surface);
+         border: 1px solid var(--line);
+         border-radius: 20px;
+         box-shadow: var(--shadow);
+         padding: 16px 18px 20px;
+      }
+
+      .chart-wrap h2 {
+         margin: 4px 0 12px;
+         font-size: 1rem;
+         color: var(--text-soft);
+         font-weight: 600;
+         letter-spacing: 0.06em;
+         text-transform: uppercase;
+      }
+
+      .chart-zone {
+         height: min(460px, 55vh);
+      }
+
+      .status {
+         margin-top: 10px;
+         min-height: 20px;
+         font-size: 0.88rem;
+         color: #8f2119;
+      }
+
+      @media (max-width: 840px) {
+         .shell {
+            margin: 20px auto 24px;
+         }
+
+         .stats {
+            grid-template-columns: 1fr;
+         }
+
+         .chart-zone {
+            height: min(360px, 50vh);
+         }
+      }
+
+      @keyframes fadeIn {
+         from {
+            opacity: 0;
+         }
+         to {
+            opacity: 1;
+         }
+      }
+
+      @keyframes rise {
+         from {
+            transform: translateY(8px);
+            opacity: 0;
+         }
+         to {
+            transform: translateY(0);
+            opacity: 1;
+         }
+      }
+   </style>
+</head>
+<body>
+   <main class="shell">
+      <section class="hero">
+         <h1>Bitcoin Price Dashboard</h1>
+         <p>Data source: <span class="mono" id="sourceText">./data/history.json</span></p>
+      </section>
+
+      <section class="stats">
+         <article class="card">
+            <p class="label">Latest Price</p>
+            <p class="value" id="latestPrice">Loading...</p>
+         </article>
+         <article class="card">
+            <p class="label">Timestamp</p>
+            <p class="value mono" id="latestTime">Loading...</p>
+         </article>
+         <article class="card">
+            <p class="label">Total Records</p>
+            <p class="value" id="totalRecords">0</p>
+         </article>
+      </section>
+
+      <section class="chart-wrap">
+         <h2>BTC Trend</h2>
+         <div class="chart-zone">
+            <canvas id="priceChart"></canvas>
+         </div>
+         <p class="status" id="statusText"></p>
+      </section>
+   </main>
+
+   <script>
+      const queryDataUrl = new URLSearchParams(window.location.search).get("data");
+      const DATA_URL = queryDataUrl || window.BTC_DATA_URL || "./data/history.json";
+      const sourceText = document.getElementById("sourceText");
+      const latestPriceEl = document.getElementById("latestPrice");
+      const latestTimeEl = document.getElementById("latestTime");
+      const totalRecordsEl = document.getElementById("totalRecords");
+      const statusTextEl = document.getElementById("statusText");
+
+      sourceText.textContent = DATA_URL;
+
+      function toPoints(raw) {
+         if (!Array.isArray(raw)) return [];
+
+         return raw
+            .map((item) => {
+               const timestamp = item?.timestamp ?? item?.time ?? item?.date;
+               const price = Number(item?.price ?? item?.close ?? item?.value);
+
+               if (!timestamp || Number.isNaN(price)) {
+                  return null;
+               }
+
+               return { timestamp: String(timestamp), price };
+            })
+            .filter(Boolean);
+      }
+
+      function drawChart(points) {
+         const labels = points.map((p) => p.timestamp);
+         const prices = points.map((p) => p.price);
+
+         const ctx = document.getElementById("priceChart").getContext("2d");
+         new Chart(ctx, {
+            type: "line",
+            data: {
+               labels,
+               datasets: [{
+                  label: "BTC Price (USD)",
+                  data: prices,
+                  borderColor: "#0ea57a",
+                  backgroundColor: "rgba(14, 165, 122, 0.14)",
+                  borderWidth: 2,
+                  pointRadius: 0,
+                  pointHoverRadius: 3,
+                  tension: 0.24,
+                  fill: true
+               }]
+            },
+            options: {
+               responsive: true,
+               maintainAspectRatio: false,
+               interaction: {
+                  mode: "index",
+                  intersect: false
+               },
+               plugins: {
+                  legend: {
+                     display: false
+                  },
+                  tooltip: {
+                     callbacks: {
+                        label: (ctx) => `Price: $${ctx.parsed.y.toLocaleString()}`
+                     }
+                  }
+               },
+               scales: {
+                  x: {
+                     ticks: {
+                        color: "#45635e",
+                        maxTicksLimit: 7
+                     },
+                     grid: {
+                        color: "rgba(69, 99, 94, 0.1)"
+                     }
+                  },
+                  y: {
+                     ticks: {
+                        color: "#45635e",
+                        callback: (value) => `$${Number(value).toLocaleString()}`
+                     },
+                     grid: {
+                        color: "rgba(69, 99, 94, 0.12)"
+                     }
+                  }
+               }
+            }
+         });
+      }
+
+      async function init() {
+         try {
+            const res = await fetch(DATA_URL, { cache: "no-store" });
+            if (!res.ok) {
+               throw new Error(`HTTP ${res.status} while loading data`);
+            }
+
+            const raw = await res.json();
+            const points = toPoints(raw);
+            if (points.length === 0) {
+               throw new Error("No valid records in data");
+            }
+
+            const latest = points[points.length - 1];
+            latestPriceEl.textContent = `$${latest.price.toLocaleString()}`;
+            latestTimeEl.textContent = latest.timestamp;
+            totalRecordsEl.textContent = String(points.length);
+            statusTextEl.textContent = "";
+
+            drawChart(points);
+         } catch (error) {
+            latestPriceEl.textContent = "N/A";
+            latestTimeEl.textContent = "N/A";
+            totalRecordsEl.textContent = "0";
+            statusTextEl.textContent = `Failed to load data: ${error.message}`;
+         }
+      }
+
+      init();
+   </script>
+</body>
+</html>
